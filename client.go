@@ -93,22 +93,20 @@ func (c *Client) Delete(url string) error {
 // bytes executes the passed request using the Client
 // http.Client, returning all the bytes read from the response
 func (c *Client) bytes(method, url string, in interface{}) ([]byte, error) {
-	r, err := c.readCloser(method, url, in)
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-	return ioutil.ReadAll(r)
-}
-
-// readCloser executes the passed request using the Client
-// http.Client, returning the io.ReadCloser from the response
-func (c *Client) readCloser(method, url string, in interface{}) (io.ReadCloser, error) {
 	// Marshal a request body if one exists
 	var body io.ReadWriter
 	if in != nil {
 		if err := json.NewEncoder(body).Encode(in); err != nil {
 			return nil, err
+		}
+	}
+
+	// Return cached content
+	if method == http.MethodGet && c.Cache != nil {
+		if bIface, ok := c.Cache.Get(url); ok {
+			if bytes, ok := bIface.([]byte); ok {
+				return bytes, nil
+			}
 		}
 	}
 
@@ -128,12 +126,24 @@ func (c *Client) readCloser(method, url string, in interface{}) (io.ReadCloser, 
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 
 	// Check the status code for an OK
 	if res.StatusCode >= 400 {
 		return nil, fmt.Errorf("Non 200 status code : %s", res.Status)
 	}
 
+	// Decode the body
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store the new bytes response in cache
+	if method == http.MethodGet && c.Cache != nil {
+		c.Cache.SetDefault(url, bytes)
+	}
+
 	// Decode and return the bytes
-	return res.Body, nil
+	return bytes, nil
 }
