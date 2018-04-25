@@ -12,30 +12,40 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
-)
 
-// DefaultClient is a default Client for using without
-// having to declare a Client
-var DefaultClient = New(time.Second*30, nil)
+	cache "github.com/patrickmn/go-cache"
+)
 
 // Client is an http.Client wrapper
 type Client struct {
 	Client  *http.Client
+	Cache   *cache.Cache
+	BaseURL string
 	Headers map[string]string
 }
 
-// New creates a new Client reference given a client
+// NewBaseClient creates a new Client reference given a client
 // timeout
-func New(timeout time.Duration, headers map[string]string) *Client {
-	return &Client{
-		Client:  &http.Client{Timeout: timeout},
-		Headers: headers,
-	}
+func NewBaseClient(timeout time.Duration) *Client {
+	return &Client{Client: &http.Client{Timeout: timeout}}
 }
 
-// Head calls Head using the DefaultClient
-func Head(url string) error {
-	return DefaultClient.Head(url)
+// SetCache sets the cache on the Client which will
+// be used on all subsequent requests
+func (c *Client) SetCache(cacheExp, cacheCleanup time.Duration) {
+	c.Cache = cache.New(cacheExp, cacheCleanup)
+}
+
+// SetBaseURL sets the baseURL on the Client which will
+// be used on all subsequent requests
+func (c *Client) SetBaseURL(url string) {
+	c.BaseURL = url
+}
+
+// SetHeaders sets the headers on the Client which will
+// be used on all subsequent requests
+func (c *Client) SetHeaders(headers map[string]string) {
+	c.Headers = headers
 }
 
 // Head performs a HEAD request using the passed URL
@@ -45,31 +55,10 @@ func (c *Client) Head(url string) error {
 	return err
 }
 
-// GetReader calls GetReader using the DefaultClient
-func GetReader(url string) (io.ReadCloser, error) {
-	return DefaultClient.GetReader(url)
-}
-
-// GetReader performs a GET request using the passed URL
-// and returns the io.ReadCloser body
-func (c *Client) GetReader(url string) (io.ReadCloser, error) {
-	return c.readCloser(http.MethodGet, url, nil)
-}
-
-// GetBytes calls GetBytes using the DefaultClient
-func GetBytes(url string) ([]byte, error) {
-	return DefaultClient.GetBytes(url)
-}
-
 // GetBytes performs a GET request using the passed URL
 func (c *Client) GetBytes(url string) ([]byte, error) {
 	// Execute the request and return the response
 	return c.bytes(http.MethodGet, url, nil)
-}
-
-// GetString calls GetString using the DefaultClient
-func GetString(url string) (string, error) {
-	return DefaultClient.GetString(url)
 }
 
 // GetString performs a GET request and returns the response
@@ -83,11 +72,6 @@ func (c *Client) GetString(url string) (string, error) {
 	return string(body), nil
 }
 
-// GetJSON calls GetJSON using the DefaultClient
-func GetJSON(url string, out interface{}) error {
-	return DefaultClient.GetJSON(url, out)
-}
-
 // GetJSON performs a basic http GET request and decodes the JSON
 // response into the out interface
 func (c *Client) GetJSON(url string, out interface{}) error {
@@ -97,11 +81,6 @@ func (c *Client) GetJSON(url string, out interface{}) error {
 		return err
 	}
 	return json.Unmarshal(body, out)
-}
-
-// Delete calls Delete using the DefaultClient
-func Delete(url string) error {
-	return DefaultClient.Delete(url)
 }
 
 // Delete performs a DELETE request using the passed URL
