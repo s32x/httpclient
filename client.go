@@ -48,24 +48,24 @@ func (c *Client) SetHeaders(headers map[string]string) {
 	c.Headers = headers
 }
 
-// Head performs a HEAD request using the passed URL
-func (c *Client) Head(url string) error {
+// Head performs a HEAD request using the passed path
+func (c *Client) Head(path string) error {
 	// Execute the request and return the response
-	_, err := c.bytes(http.MethodHead, url, nil)
+	_, err := c.bytes(http.MethodHead, path, nil)
 	return err
 }
 
-// GetBytes performs a GET request using the passed URL
-func (c *Client) GetBytes(url string) ([]byte, error) {
+// GetBytes performs a GET request using the passed path
+func (c *Client) GetBytes(path string) ([]byte, error) {
 	// Execute the request and return the response
-	return c.bytes(http.MethodGet, url, nil)
+	return c.bytes(http.MethodGet, path, nil)
 }
 
 // GetString performs a GET request and returns the response
 // as a string
-func (c *Client) GetString(url string) (string, error) {
+func (c *Client) GetString(path string) (string, error) {
 	// Retrieve the bytes and decode the response
-	body, err := c.GetBytes(url)
+	body, err := c.GetBytes(path)
 	if err != nil {
 		return "", err
 	}
@@ -74,25 +74,26 @@ func (c *Client) GetString(url string) (string, error) {
 
 // GetJSON performs a basic http GET request and decodes the JSON
 // response into the out interface
-func (c *Client) GetJSON(url string, out interface{}) error {
+func (c *Client) GetJSON(path string, out interface{}) error {
 	// Retrieve the bytes and decode the response
-	body, err := c.GetBytes(url)
+	body, err := c.GetBytes(path)
 	if err != nil {
 		return err
 	}
 	return json.Unmarshal(body, out)
 }
 
-// Delete performs a DELETE request using the passed URL
-func (c *Client) Delete(url string) error {
+// Delete performs a DELETE request using the passed path
+func (c *Client) Delete(path string) error {
 	// Execute the request and return the response
-	_, err := c.bytes(http.MethodDelete, url, nil)
+	_, err := c.bytes(http.MethodDelete, path, nil)
 	return err
 }
 
 // bytes executes the passed request using the Client
 // http.Client, returning all the bytes read from the response
-func (c *Client) bytes(method, url string, in interface{}) ([]byte, error) {
+func (c *Client) bytes(method, path string, in interface{}) ([]byte, error) {
+	url := c.BaseURL + path
 	// Marshal a request body if one exists
 	var body io.ReadWriter
 	if in != nil {
