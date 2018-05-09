@@ -7,7 +7,6 @@ package httpclient
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -93,7 +92,9 @@ func (c *Client) Delete(path string) error {
 // bytes executes the passed request using the Client
 // http.Client, returning all the bytes read from the response
 func (c *Client) bytes(method, path string, in interface{}) ([]byte, error) {
+	// Assemble the BaseURL + Path url
 	url := c.BaseURL + path
+
 	// Marshal a request body if one exists
 	var body io.ReadWriter
 	if in != nil {
@@ -128,11 +129,6 @@ func (c *Client) bytes(method, path string, in interface{}) ([]byte, error) {
 		return nil, err
 	}
 	defer res.Body.Close()
-
-	// Check the status code for an OK
-	if res.StatusCode >= 400 {
-		return nil, fmt.Errorf("Non 200 status code : %s", res.Status)
-	}
 
 	// Decode the body
 	bytes, err := ioutil.ReadAll(res.Body)
