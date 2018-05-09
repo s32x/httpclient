@@ -7,6 +7,7 @@ package httpclient
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -139,6 +140,11 @@ func (c *Client) bytes(method, path string, in interface{}) ([]byte, error) {
 	// Store the new bytes response in cache
 	if method == http.MethodGet && c.Cache != nil {
 		c.Cache.SetDefault(url, bytes)
+	}
+
+	// Check the status code for an OK
+	if res.StatusCode >= 400 {
+		return bytes, fmt.Errorf("Non 200 status code : %s", res.Status)
 	}
 
 	// Decode and return the bytes
