@@ -24,33 +24,37 @@ type Client struct {
 	Headers map[string]string
 }
 
-// NewBaseClient creates a new Client reference given a client
-// timeout
+// NewBaseClient creates a new Client reference given a
+// client timeout
 func NewBaseClient() *Client {
 	return &Client{Client: &http.Client{}}
 }
 
 // SetTimeout sets the timeout on the httpclients client
-func (c *Client) SetTimeout(timeout time.Duration) {
+func (c *Client) SetTimeout(timeout time.Duration) *Client {
 	c.Client.Timeout = timeout
+	return c
 }
 
-// SetCache sets the cache on the Client which will
-// be used on all subsequent requests
-func (c *Client) SetCache(cacheExp, cacheCleanup time.Duration) {
+// SetCache sets the cache on the Client which will be
+// used on all subsequent requests
+func (c *Client) SetCache(cacheExp, cacheCleanup time.Duration) *Client {
 	c.Cache = cache.New(cacheExp, cacheCleanup)
+	return c
 }
 
 // SetBaseURL sets the baseURL on the Client which will
 // be used on all subsequent requests
-func (c *Client) SetBaseURL(url string) {
+func (c *Client) SetBaseURL(url string) *Client {
 	c.BaseURL = url
+	return c
 }
 
 // SetHeaders sets the headers on the Client which will
 // be used on all subsequent requests
-func (c *Client) SetHeaders(headers map[string]string) {
+func (c *Client) SetHeaders(headers map[string]string) *Client {
 	c.Headers = headers
+	return c
 }
 
 // Head performs a HEAD request using the passed path
