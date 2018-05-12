@@ -26,8 +26,13 @@ type Client struct {
 
 // NewBaseClient creates a new Client reference given a client
 // timeout
-func NewBaseClient(timeout time.Duration) *Client {
-	return &Client{Client: &http.Client{Timeout: timeout}}
+func NewBaseClient() *Client {
+	return &Client{Client: &http.Client{}}
+}
+
+// SetTimeout sets the timeout on the httpclients client
+func (c *Client) SetTimeout(timeout time.Duration) {
+	c.Client.Timeout = timeout
 }
 
 // SetCache sets the cache on the Client which will

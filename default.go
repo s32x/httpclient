@@ -1,10 +1,8 @@
 package httpclient
 
-import "time"
-
 // DefaultClient is a default Client for using without
 // having to declare a Client
-var DefaultClient = NewBaseClient(time.Second * 30)
+var DefaultClient = NewBaseClient()
 
 // Head calls Head using the DefaultClient
 func Head(url string) error {
