@@ -64,10 +64,15 @@ func (c *Client) Head(path string) error {
 	return err
 }
 
-// GetBytes performs a GET request using the passed path
-func (c *Client) GetBytes(path string) ([]byte, error) {
-	// Execute the request and return the response
-	return c.bytes(http.MethodGet, path, nil)
+// PostJSON performs a basic http POST request and decodes the JSON
+// response into the out interface
+func (c *Client) PostJSON(path string, in, out interface{}) error {
+	// Retrieve the bytes and decode the response
+	body, err := c.PostBytes(path, in)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(body, out)
 }
 
 // GetString performs a GET request and returns the response
@@ -90,6 +95,18 @@ func (c *Client) GetJSON(path string, out interface{}) error {
 		return err
 	}
 	return json.Unmarshal(body, out)
+}
+
+// PostBytes performs a POST request using the passed path and body
+func (c *Client) PostBytes(path string, in interface{}) ([]byte, error) {
+	// Execute the request and return the response
+	return c.bytes(http.MethodPost, path, in)
+}
+
+// GetBytes performs a GET request using the passed path
+func (c *Client) GetBytes(path string) ([]byte, error) {
+	// Execute the request and return the response
+	return c.bytes(http.MethodGet, path, nil)
 }
 
 // Delete performs a DELETE request using the passed path

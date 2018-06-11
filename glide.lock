@@ -1,6 +1,6 @@
-hash: e293e2d8e660bb6c45d14c6603d0ef28c5265fa096d0a9b7cbbf6e0d44e5ada9
-updated: 2018-05-12T16:18:52.951226-07:00
+hash: cf4fd9d5d14092943e3df398516ac029e862a150880e1cea8798191a33493bf7
+updated: 2018-06-11T00:31:48.64953-07:00
 imports:
 - name: github.com/patrickmn/go-cache
-  version: a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0
+  version: 9f6ff22cfff829561052f5886ec80a2ac148b4eb
 testImports: []
