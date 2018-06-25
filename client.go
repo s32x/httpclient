@@ -24,6 +24,10 @@ type Client struct {
 	Headers map[string]string
 }
 
+// DefaultClient is a default Client for using without
+// having to declare a Client
+var DefaultClient = NewBaseClient()
+
 // NewBaseClient creates a new Client reference given a
 // client timeout
 func NewBaseClient() *Client {
@@ -38,8 +42,8 @@ func (c *Client) SetTimeout(timeout time.Duration) *Client {
 
 // SetCache sets the cache on the Client which will be
 // used on all subsequent requests
-func (c *Client) SetCache(cacheExp, cacheCleanup time.Duration) *Client {
-	c.Cache = cache.New(cacheExp, cacheCleanup)
+func (c *Client) SetCache(expiration, cleanup time.Duration) *Client {
+	c.Cache = cache.New(expiration, cleanup)
 	return c
 }
 
@@ -57,69 +61,11 @@ func (c *Client) SetHeaders(headers map[string]string) *Client {
 	return c
 }
 
-// Head performs a HEAD request using the passed path
-func (c *Client) Head(path string) error {
-	// Execute the request and return the response
-	_, err := c.bytes(http.MethodHead, path, nil)
-	return err
-}
-
-// PostJSON performs a basic http POST request and decodes the JSON
-// response into the out interface
-func (c *Client) PostJSON(path string, in, out interface{}) error {
-	// Retrieve the bytes and decode the response
-	body, err := c.PostBytes(path, in)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(body, out)
-}
-
-// GetString performs a GET request and returns the response
-// as a string
-func (c *Client) GetString(path string) (string, error) {
-	// Retrieve the bytes and decode the response
-	body, err := c.GetBytes(path)
-	if err != nil {
-		return "", err
-	}
-	return string(body), nil
-}
-
-// GetJSON performs a basic http GET request and decodes the JSON
-// response into the out interface
-func (c *Client) GetJSON(path string, out interface{}) error {
-	// Retrieve the bytes and decode the response
-	body, err := c.GetBytes(path)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(body, out)
-}
-
-// PostBytes performs a POST request using the passed path and body
-func (c *Client) PostBytes(path string, in interface{}) ([]byte, error) {
-	// Execute the request and return the response
-	return c.bytes(http.MethodPost, path, in)
-}
-
-// GetBytes performs a GET request using the passed path
-func (c *Client) GetBytes(path string) ([]byte, error) {
-	// Execute the request and return the response
-	return c.bytes(http.MethodGet, path, nil)
-}
-
-// Delete performs a DELETE request using the passed path
-func (c *Client) Delete(path string) error {
-	// Execute the request and return the response
-	_, err := c.bytes(http.MethodDelete, path, nil)
-	return err
-}
-
 // bytes executes the passed request using the Client
 // http.Client, returning all the bytes read from the response
-func (c *Client) bytes(method, path string, in interface{}) ([]byte, error) {
-	// Assemble the BaseURL + Path url
+func (c *Client) bytes(method, path string,
+	headers map[string]string, in interface{}) ([]byte, error) {
+	// Assemble the full request URL
 	url := c.BaseURL + path
 
 	// Marshal a request body if one exists
@@ -132,14 +78,12 @@ func (c *Client) bytes(method, path string, in interface{}) ([]byte, error) {
 
 	// Return cached content
 	if method == http.MethodGet && c.Cache != nil {
-		if bIface, ok := c.Cache.Get(url); ok {
-			if bytes, ok := bIface.([]byte); ok {
-				return bytes, nil
-			}
+		if b, ok := c.Cache.Get(url); ok {
+			return b.([]byte), nil
 		}
 	}
 
-	// Generate the request
+	// Generate a new http Request
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -149,8 +93,13 @@ func (c *Client) bytes(method, path string, in interface{}) ([]byte, error) {
 	for k, v := range c.Headers {
 		req.Header.Set(k, v)
 	}
+	if headers != nil {
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+	}
 
-	// Execute the passed request
+	// Execute the newly generated request
 	res, err := c.Client.Do(req)
 	if err != nil {
 		return nil, err
@@ -170,7 +119,7 @@ func (c *Client) bytes(method, path string, in interface{}) ([]byte, error) {
 
 	// Check the status code for an OK
 	if res.StatusCode >= 400 {
-		return bytes, fmt.Errorf("Non 200 status code : %s", res.Status)
+		return bytes, fmt.Errorf("400+ status code received : %s", res.Status)
 	}
 
 	// Decode and return the bytes
