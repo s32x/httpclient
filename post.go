@@ -5,19 +5,30 @@ import (
 	"net/http"
 )
 
-// PostJSON performs a basic http POST request and decodes the JSON
-// response into the out interface
-func (c *Client) PostJSON(path string, in, out interface{}) error {
-	// Retrieve the bytes and decode the response
-	body, err := c.PostBytes(path, nil, in)
+// PostJSON performs a basic http POST request and decodes
+// the JSON response into the out interface
+func (c *Client) PostJSON(path string, headers map[string]string, in, out interface{}) error {
+	// Marshal the in interface to a byte slice
+	body, err := json.Marshal(in)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(body, out)
+
+	// Retrieve the bytes and decode the response
+	res, err := c.PostBytes(path, headers, body)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(res, out)
 }
 
-// PostBytes performs a POST request using the passed path and body
-func (c *Client) PostBytes(path string, headers map[string]string, in interface{}) ([]byte, error) {
+// PostBytes performs a POST request using the passed path
+// and body
+func (c *Client) PostBytes(path string, headers map[string]string, in []byte) ([]byte, error) {
 	// Execute the request and return the response
-	return c.bytes(http.MethodPost, path, headers, in)
+	res, err := c.Do(http.MethodPost, path, headers, in)
+	if err != nil {
+		return nil, err
+	}
+	return res.Body, nil
 }

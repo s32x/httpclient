@@ -10,6 +10,6 @@ func Delete(url string) error {
 // Delete performs a DELETE request using the passed path
 func (c *Client) Delete(path string, headers map[string]string) error {
 	// Execute the request and return the response
-	_, err := c.bytes(http.MethodDelete, path, headers, nil)
+	_, err := c.Do(http.MethodGet, path, headers, nil)
 	return err
 }

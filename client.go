@@ -6,20 +6,15 @@ package httpclient
 // responses into interfaces
 
 import (
-	"encoding/json"
-	"fmt"
+	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
-
-	cache "github.com/patrickmn/go-cache"
 )
 
 // Client is an http.Client wrapper
 type Client struct {
 	Client  *http.Client
-	Cache   *cache.Cache
 	BaseURL string
 	Headers map[string]string
 }
@@ -40,13 +35,6 @@ func (c *Client) SetTimeout(timeout time.Duration) *Client {
 	return c
 }
 
-// SetCache sets the cache on the Client which will be
-// used on all subsequent requests
-func (c *Client) SetCache(expiration, cleanup time.Duration) *Client {
-	c.Cache = cache.New(expiration, cleanup)
-	return c
-}
-
 // SetBaseURL sets the baseURL on the Client which will
 // be used on all subsequent requests
 func (c *Client) SetBaseURL(url string) *Client {
@@ -61,67 +49,44 @@ func (c *Client) SetHeaders(headers map[string]string) *Client {
 	return c
 }
 
-// bytes executes the passed request using the Client
-// http.Client, returning all the bytes read from the response
-func (c *Client) bytes(method, path string,
-	headers map[string]string, in interface{}) ([]byte, error) {
-	// Assemble the full request URL
+// Do performs the request and returns a fully populated
+// Response
+func (c *Client) Do(method, path string,
+	headers map[string]string, body []byte) (*Response, error) {
+	// Build the full request URL
 	url := c.BaseURL + path
 
-	// Marshal a request body if one exists
-	var body io.ReadWriter
-	if in != nil {
-		if err := json.NewEncoder(body).Encode(in); err != nil {
-			return nil, err
-		}
+	// Encode the body if one was passed
+	var b io.ReadWriter
+	if body != nil {
+		b = bytes.NewBuffer(body)
 	}
 
-	// Return cached content
-	if method == http.MethodGet && c.Cache != nil {
-		if b, ok := c.Cache.Get(url); ok {
-			return b.([]byte), nil
-		}
-	}
-
-	// Generate a new http Request
-	req, err := http.NewRequest(method, url, body)
+	// Generate a new request using the new URL
+	r, err := http.NewRequest(method, url, b)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set all headers
-	for k, v := range c.Headers {
-		req.Header.Set(k, v)
+	// Add any client and passed headers to the new request
+	if c.Headers != nil {
+		for k, v := range c.Headers {
+			r.Header.Set(k, v)
+		}
 	}
 	if headers != nil {
 		for k, v := range headers {
-			req.Header.Set(k, v)
+			r.Header.Set(k, v)
 		}
 	}
 
-	// Execute the newly generated request
-	res, err := c.Client.Do(req)
+	// Execute the fully constructed request
+	res, err := c.Client.Do(r)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
 
-	// Decode the body
-	bytes, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Store the new bytes response in cache
-	if method == http.MethodGet && c.Cache != nil {
-		c.Cache.SetDefault(url, bytes)
-	}
-
-	// Check the status code for an OK
-	if res.StatusCode >= 400 {
-		return bytes, fmt.Errorf("400+ status code received : %s", res.Status)
-	}
-
-	// Decode and return the bytes
-	return bytes, nil
+	// Decode the response into a Response and return
+	return NewResponse(res), nil
 }

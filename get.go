@@ -13,7 +13,11 @@ func GetBytes(url string) ([]byte, error) {
 // GetBytes performs a GET request using the passed path
 func (c *Client) GetBytes(path string, headers map[string]string) ([]byte, error) {
 	// Execute the request and return the response
-	return c.bytes(http.MethodGet, path, headers, nil)
+	res, err := c.Do(http.MethodGet, path, headers, nil)
+	if err != nil {
+		return nil, err
+	}
+	return res.Body, nil
 }
 
 // GetString calls GetString using the DefaultClient

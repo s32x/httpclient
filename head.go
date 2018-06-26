@@ -10,6 +10,6 @@ func Head(url string) error {
 // Head performs a HEAD request using the passed path
 func (c *Client) Head(path string, headers map[string]string) error {
 	// Execute the request and return the response
-	_, err := c.bytes(http.MethodHead, path, headers, nil)
+	_, err := c.Do(http.MethodHead, path, headers, nil)
 	return err
 }
