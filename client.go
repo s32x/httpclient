@@ -51,19 +51,18 @@ func (c *Client) SetHeaders(headers map[string]string) *Client {
 
 // Do performs the request and returns a fully populated
 // Response
-func (c *Client) Do(method, path string,
-	headers map[string]string, body []byte) (*Response, error) {
+func (c *Client) Do(req *Request) (*Response, error) {
 	// Build the full request URL
-	url := c.BaseURL + path
+	url := c.BaseURL + req.Path
 
 	// Encode the body if one was passed
 	var b io.ReadWriter
-	if body != nil {
-		b = bytes.NewBuffer(body)
+	if req.Body != nil {
+		b = bytes.NewBuffer(req.Body)
 	}
 
 	// Generate a new request using the new URL
-	r, err := http.NewRequest(method, url, b)
+	r, err := http.NewRequest(req.Method, url, b)
 	if err != nil {
 		return nil, err
 	}
@@ -74,8 +73,8 @@ func (c *Client) Do(method, path string,
 			r.Header.Set(k, v)
 		}
 	}
-	if headers != nil {
-		for k, v := range headers {
+	if req.Headers != nil {
+		for k, v := range req.Headers {
 			r.Header.Set(k, v)
 		}
 	}
@@ -88,5 +87,5 @@ func (c *Client) Do(method, path string,
 	defer res.Body.Close()
 
 	// Decode the response into a Response and return
-	return NewResponse(res), nil
+	return NewResponse(res)
 }

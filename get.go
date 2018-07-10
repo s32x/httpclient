@@ -5,21 +5,6 @@ import (
 	"net/http"
 )
 
-// GetBytes calls GetBytes using the DefaultClient
-func GetBytes(url string) ([]byte, error) {
-	return DefaultClient.GetBytes(url, nil)
-}
-
-// GetBytes performs a GET request using the passed path
-func (c *Client) GetBytes(path string, headers map[string]string) ([]byte, error) {
-	// Execute the request and return the response
-	res, err := c.Do(http.MethodGet, path, headers, nil)
-	if err != nil {
-		return nil, err
-	}
-	return res.Body, nil
-}
-
 // GetString calls GetString using the DefaultClient
 func GetString(url string) (string, error) {
 	return DefaultClient.GetString(url, nil)
@@ -50,4 +35,19 @@ func (c *Client) GetJSON(path string, headers map[string]string, out interface{}
 		return err
 	}
 	return json.Unmarshal(body, out)
+}
+
+// GetBytes calls GetBytes using the DefaultClient
+func GetBytes(url string) ([]byte, error) {
+	return DefaultClient.GetBytes(url, nil)
+}
+
+// GetBytes performs a GET request using the passed path
+func (c *Client) GetBytes(path string, headers map[string]string) ([]byte, error) {
+	// Execute the request and return the response
+	res, err := c.Do(NewRequest(http.MethodGet, path, headers, nil))
+	if err != nil {
+		return nil, err
+	}
+	return res.Body, nil
 }

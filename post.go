@@ -26,7 +26,7 @@ func (c *Client) PostJSON(path string, headers map[string]string, in, out interf
 // and body
 func (c *Client) PostBytes(path string, headers map[string]string, in []byte) ([]byte, error) {
 	// Execute the request and return the response
-	res, err := c.Do(http.MethodPost, path, headers, in)
+	res, err := c.Do(NewRequest(http.MethodPost, path, headers, in))
 	if err != nil {
 		return nil, err
 	}
