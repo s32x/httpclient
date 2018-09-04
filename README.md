@@ -1,9 +1,9 @@
-<center>
+<div align="center">
     <img src="logo.png" height="101" width="350" /><br/>
     <a href="https://godoc.org/github.com/starboy/httpclient">
         <img src="https://godoc.org/github.com/starboy/httpclient?status.svg" />
     </a>
-</center>
+</div>
 
 httpclient is a simple convenience package for performing http/api requests in Go. It wraps the standard libraries net/http package to avoid the repetitive request->decode->closebody logic you're likely so familiar with. Using the lib is very simple - just as with the net/http package you can define a client of your own or use the default. Below is a very basic example.
 
