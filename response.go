@@ -5,8 +5,8 @@ import (
 	"net/http"
 )
 
-// Response is a basic HTTP response struct containing
-// just the important data returned from an HTTP request
+// Response is a basic HTTP response struct containing just the important data
+// returned from an HTTP request
 type Response struct {
 	StatusCode int
 	Headers    map[string]string

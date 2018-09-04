@@ -10,8 +10,7 @@ func GetString(url string) (string, error) {
 	return DefaultClient.GetString(url, nil)
 }
 
-// GetString performs a GET request and returns the response
-// as a string
+// GetString performs a GET request and returns the response as a string
 func (c *Client) GetString(path string, headers map[string]string) (string, error) {
 	// Retrieve the bytes and decode the response
 	body, err := c.GetBytes(path, headers)
@@ -26,8 +25,8 @@ func GetJSON(url string, out interface{}) error {
 	return DefaultClient.GetJSON(url, nil, out)
 }
 
-// GetJSON performs a basic http GET request and decodes the JSON
-// response into the out interface
+// GetJSON performs a basic http GET request and decodes the JSON response into
+// the out interface
 func (c *Client) GetJSON(path string, headers map[string]string, out interface{}) error {
 	// Retrieve the bytes and decode the response
 	body, err := c.GetBytes(path, headers)
