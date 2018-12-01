@@ -1,4 +1,4 @@
-package httpclient
+package httpclient /* import "s32x.com/httpclient" */
 
 import "net/http"
 
@@ -7,9 +7,10 @@ func Delete(url string) error {
 	return DefaultClient.Delete(url, nil)
 }
 
-// Delete performs a DELETE request using the passed path
+// Delete performs a DELETE request using the passed path and headers. It
+// expects a 200 code status in the response
 func (c *Client) Delete(path string, headers map[string]string) error {
-	// Execute the request and return the response
-	_, err := c.Do(NewRequest(http.MethodDelete, path, headers, nil))
+	_, err := c.DoWithStatus(NewRequest(http.MethodDelete, path, headers, nil),
+		http.StatusOK)
 	return err
 }
