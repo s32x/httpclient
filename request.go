@@ -1,4 +1,4 @@
-package httpclient /* import "s32x.com/httpclient" */
+package httpclient
 
 // Request is a basic HTTP request struct containing just what is needed to
 // perform a standard HTTP request

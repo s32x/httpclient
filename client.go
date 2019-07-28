@@ -1,4 +1,4 @@
-package httpclient /* import "s32x.com/httpclient" */
+package httpclient
 
 // httpclient is a convenience package for executing HTTP requests. It's safe
 // in that it always closes response bodies and returns byte slices, strings or
