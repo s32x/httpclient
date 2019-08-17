@@ -3,6 +3,7 @@ package httpclient
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -36,6 +37,16 @@ func (r *Response) StatusCode() (int, error) {
 		return 0, r.err
 	}
 	return r.res.StatusCode, nil
+}
+
+// ExpectStatus takes an expected status code and sets an error on the Response
+// if the expected code isn't what is actually received
+func (r *Response) ExpectStatus(expected int) *Response {
+	if code := r.res.StatusCode; code != expected {
+		r.err = fmt.Errorf("Unexpected status code : %v", code)
+		return r
+	}
+	return r
 }
 
 // Bytes attempts to return the decoded response as bytes

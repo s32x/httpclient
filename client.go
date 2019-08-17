@@ -3,6 +3,7 @@ package httpclient
 import (
 	"net/http"
 	"sync"
+	"time"
 )
 
 // Client is an http.Client wrapper
@@ -17,9 +18,15 @@ func New() *Client {
 	return &Client{client: &http.Client{}, header: sync.Map{}}
 }
 
-// WithClient sets the timeout on the Client
+// WithClient sets the http client on the Client
 func (c *Client) WithClient(client *http.Client) *Client {
 	c.client = client
+	return c
+}
+
+// WithTimeout sets the timeout on the http client
+func (c *Client) WithTimeout(timeout time.Duration) *Client {
+	c.client.Timeout = timeout
 	return c
 }
 
