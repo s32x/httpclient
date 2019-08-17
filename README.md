@@ -16,18 +16,19 @@ package main
 import "s32x.com/httpclient"
 
 func main() {
-	s, err := httpclient.GetString("https://api.github.com/users/s32x/repos")
+  c := httpclient.New().WithBaseURL("https://api.github.com")
+	out, err := c.Get("/users/s32x/repos").Do().String()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	println(s)
+	log.Println(out)
 }
 ```
 
 The BSD 3-clause License
 ========================
 
-Copyright (c) 2018, Steven Wolfe. All rights reserved.
+Copyright (c) 2019, Steven Wolfe. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:

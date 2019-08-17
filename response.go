@@ -1,39 +1,78 @@
 package httpclient
 
 import (
+	"encoding/json"
+	"encoding/xml"
 	"io/ioutil"
 	"net/http"
-	"strings"
 )
 
-// Response is a basic HTTP response struct containing just the important data
-// returned from an HTTP request
+// Response contains the raw http.Response reference OR any error that took
+// place while performing the request
 type Response struct {
-	StatusCode int
-	Headers    map[string][]string
-	Body       []byte
+	err error
+	res *http.Response
 }
 
-// NewResponse creates a more basic HTTP Response from the passed http.Response
-func NewResponse(res *http.Response) (*Response, error) {
-	// Create a map of all headers
-	headers := make(map[string][]string)
-	for k, v := range res.Header {
-		if len(v) > 0 {
-			headers[k] = strings.Split(v[0], ", ")
-		}
+// Response returns the http Response reference that is on the Response
+func (r *Response) Response() (*http.Response, error) {
+	if r.err != nil {
+		return nil, r.err
 	}
+	return r.res, nil
+}
 
-	// Decode the body into a byte slice
-	body, err := ioutil.ReadAll(res.Body)
+// Status returns the status message on the Response
+func (r *Response) Status() (string, error) {
+	if r.err != nil {
+		return "", r.err
+	}
+	return r.res.Status, nil
+}
+
+// StatusCode returns the status code found on the Response
+func (r *Response) StatusCode() (int, error) {
+	if r.err != nil {
+		return 0, r.err
+	}
+	return r.res.StatusCode, nil
+}
+
+// Bytes attempts to return the decoded response as bytes
+func (r *Response) Bytes() ([]byte, error) {
+	if r.err != nil {
+		return nil, r.err
+	}
+	defer r.res.Body.Close()
+	return ioutil.ReadAll(r.res.Body)
+}
+
+// String attempts to return the decoded response as a string
+func (r *Response) String() (string, error) {
+	if r.err != nil {
+		return "", r.err
+	}
+	bytes, err := r.Bytes()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
+	return string(bytes), nil
+}
 
-	// Return the fully populated Response
-	return &Response{
-		StatusCode: res.StatusCode,
-		Headers:    headers,
-		Body:       body,
-	}, nil
+// JSON attempts to JSON decode the response body into the passed interface
+func (r *Response) JSON(i interface{}) error {
+	if r.err != nil {
+		return r.err
+	}
+	defer r.res.Body.Close()
+	return json.NewDecoder(r.res.Body).Decode(i)
+}
+
+// XML attempts to XML decode the response body into the passed interface
+func (r *Response) XML(i interface{}) error {
+	if r.err != nil {
+		return r.err
+	}
+	defer r.res.Body.Close()
+	return xml.NewDecoder(r.res.Body).Decode(i)
 }
