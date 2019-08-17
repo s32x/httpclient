@@ -15,6 +15,9 @@ type Response struct {
 	res *http.Response
 }
 
+// Error returns the error stored on the Response
+func (r *Response) Error() error { return r.err }
+
 // Response returns the http Response reference that is on the Response
 func (r *Response) Response() (*http.Response, error) {
 	if r.err != nil {
