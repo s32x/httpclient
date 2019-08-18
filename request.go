@@ -24,11 +24,10 @@ type Request struct {
 
 func newRequest(client *Client, method, path string) *Request {
 	return &Request{
-		client:         client,
-		method:         method,
-		path:           path,
-		expectedStatus: http.StatusOK,
-		header:         sync.Map{},
+		client: client,
+		method: method,
+		path:   path,
+		header: sync.Map{},
 	}
 }
 
@@ -83,16 +82,10 @@ func (r *Request) WithHeader(key, value string) *Request {
 	return r
 }
 
-// WithExpectedStatus sets the desired status-code for a successful response on
-// the Request
-func (r *Request) WithExpectedStatus(code int) *Request {
-	r.expectedStatus = code
-	return r
-}
-
 // WithRetry sets the desired number of retries on the Request
-func (r *Request) WithRetry(count int) *Request {
-	r.retryCount = count
+func (r *Request) WithRetry(expectedStatusCode, retryCount int) *Request {
+	r.expectedStatus = expectedStatusCode
+	r.retryCount = retryCount
 	return r
 }
 
@@ -147,7 +140,7 @@ func (r *Request) toHTTPRequest() (*http.Request, error) {
 
 // doRetry executes the passed http Request using the passed http Client and
 // retries as many times as specified
-func doRetry(c *http.Client, r *http.Request, expectedStatus, retry int) (*http.Response, error) {
+func doRetry(c *http.Client, r *http.Request, expectedStatus, retryCount int) (*http.Response, error) {
 	// Perform the request
 	res, err := c.Do(r)
 	if err != nil {
@@ -155,8 +148,8 @@ func doRetry(c *http.Client, r *http.Request, expectedStatus, retry int) (*http.
 	}
 
 	// Retry for the expected status code or return the response
-	if res.StatusCode != expectedStatus && retry > 0 {
-		return doRetry(c, r, expectedStatus, retry-1)
+	if retryCount > 0 && res.StatusCode != expectedStatus {
+		return doRetry(c, r, expectedStatus, retryCount-1)
 	}
 	return res, nil
 }
