@@ -1,10 +1,10 @@
-<div align="center">
-    <img src="logo.png" height="101" width="350" />
-</div>
-<br/>
-
-[![Circle CI](https://circleci.com/gh/s32x/httpclient/tree/master.svg?style=svg)](https://circleci.com/gh/s32x/httpclient/tree/master)
-[![GoDoc](https://godoc.org/s32x.com/httpclient?status.svg)](https://godoc.org/s32x.com/httpclient)
+<p align="center">
+	<img src="logo.png" width="350" height="101" border="0" alt="httpclient">
+<br>
+<a href="https://circleci.com/gh/s32x/httpclient/tree/master"><img src="https://circleci.com/gh/s32x/httpclient/tree/master.svg?style=svg" alt="CircleCI"></a>
+<a href="https://goreportcard.com/report/s32x.com/httpclient"><img src="https://goreportcard.com/badge/s32x.com/httpclient" alt="Go Report Card"></a>
+<a href="https://godoc.org/s32x.com/httpclient"><img src="https://godoc.org/s32x.com/httpclient?status.svg" alt="GoDoc"></a>
+</p>
 
 httpclient is a simple convenience package for performing http/api requests in Go. It wraps the standard libraries net/http package to avoid the repetitive http logic you're likely so familiar with. It helps to remove a good amount of the boilerplate involved with writing an http client library. Using the lib is very simple - Below is a very basic example.
 
