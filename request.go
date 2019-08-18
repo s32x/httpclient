@@ -10,6 +10,8 @@ import (
 	"sync"
 )
 
+// Request is a type used for configuring, performing and decoding HTTP
+// requests
 type Request struct {
 	err            error
 	client         *http.Client // DO NOT MODIFY THIS CLIENT
@@ -99,23 +101,23 @@ func (r *Request) WithRetry(retryCount int) *Request {
 }
 
 // Do performs the passed request and returns a populated Response
-func (r *Request) Do() *Response {
+func (r *Request) Do() (*Response, error) {
 	if r.err != nil {
-		return &Response{err: r.err}
+		return nil, r.err
 	}
 
 	// Convert the Request to a standard http Request
 	req, err := r.toHTTPRequest()
 	if err != nil {
-		return &Response{err: r.err}
+		return nil, err
 	}
 
 	// Perform the request and return the wrapped Response
 	res, err := doRetry(r.client, req, r.expectedStatus, r.retryCount)
 	if err != nil {
-		return &Response{err: err}
+		return nil, err
 	}
-	return &Response{res: res}
+	return &Response{res: res}, nil
 }
 
 // toHTTPRequest converts a Request to a standard HTTP Request

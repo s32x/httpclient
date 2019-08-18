@@ -13,11 +13,26 @@ httpclient is a simple convenience package for performing http/api requests in G
 ```go
 package main
 
-import "s32x.com/httpclient"
+import (
+	"log"
+	"net/http"
+
+	"s32x.com/httpclient"
+)
 
 func main() {
-  c := httpclient.New().WithBaseURL("https://api.github.com")
-	out, err := c.Get("/users/s32x/repos").Do().String()
+	c := httpclient.New().
+		WithBaseURL("https://api.github.com").
+		WithExpectedStatus(http.StatusOK).
+		WithRetry(5)
+
+	res, err := c.Get("/users/s32x/repos").Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer res.Close()
+
+	out, err := res.String()
 	if err != nil {
 		log.Fatal(err)
 	}
