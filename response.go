@@ -40,18 +40,15 @@ func (r *Response) String() (string, error) {
 
 // Bytes attempts to return the decoded response as bytes
 func (r *Response) Bytes() ([]byte, error) {
-	defer r.res.Body.Close()
 	return ioutil.ReadAll(r.res.Body)
 }
 
 // JSON attempts to JSON decode the response body into the passed interface
 func (r *Response) JSON(i interface{}) error {
-	defer r.res.Body.Close()
 	return json.NewDecoder(r.res.Body).Decode(i)
 }
 
 // XML attempts to XML decode the response body into the passed interface
 func (r *Response) XML(i interface{}) error {
-	defer r.res.Body.Close()
 	return xml.NewDecoder(r.res.Body).Decode(i)
 }
