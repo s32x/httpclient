@@ -14,7 +14,8 @@ type Request struct {
 	err            error
 	client         *http.Client // DO NOT MODIFY THIS CLIENT
 	method         string
-	url            string
+	baseURL        string
+	path           string
 	header         sync.Map
 	expectedStatus int // The statusCode that is expected for a success
 	retryCount     int // Number of times to retry
@@ -22,24 +23,20 @@ type Request struct {
 	ctx            context.Context
 }
 
-func newRequest(client *Client, method, path string) *Request {
-	var header sync.Map
-	client.header.Range(func(key, val interface{}) bool {
-		header.Store(key, val)
-		return true
-	})
-	return &Request{
-		client:         client.client,
-		method:         method,
-		url:            client.baseURL + path,
-		header:         header,
-		expectedStatus: client.expectedStatus,
-		retryCount:     client.retryCount,
-	}
-}
-
 // Error returns the error stored on the Request
 func (r *Request) Error() error { return r.err }
+
+// WithMethod sets the passed method as the method on the Request
+func (r *Request) WithMethod(method string) *Request {
+	r.method = method
+	return r
+}
+
+// WithPath sets the passed path as the path on the Request
+func (r *Request) WithPath(path string) *Request {
+	r.path = path
+	return r
+}
 
 // WithBytes sets the passed bytes as the body to be used on the Request
 func (r *Request) WithBytes(body []byte) *Request {
@@ -128,7 +125,7 @@ func (r *Request) toHTTPRequest() (*http.Request, error) {
 	}
 
 	// Generate a new http Request using client and passed Request
-	req, err := http.NewRequest(r.method, r.url, r.body)
+	req, err := http.NewRequest(r.method, r.baseURL+r.path, r.body)
 	if err != nil {
 		return nil, err
 	}
