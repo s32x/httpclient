@@ -12,22 +12,29 @@ import (
 
 type Request struct {
 	err            error
-	client         *Client
+	client         *http.Client // DO NOT MODIFY THIS CLIENT
 	method         string
-	path           string
+	url            string
+	header         sync.Map
 	expectedStatus int // The statusCode that is expected for a success
 	retryCount     int // Number of times to retry
 	body           io.ReadWriter
 	ctx            context.Context
-	header         sync.Map
 }
 
 func newRequest(client *Client, method, path string) *Request {
+	var header sync.Map
+	client.header.Range(func(key, val interface{}) bool {
+		header.Store(key, val)
+		return true
+	})
 	return &Request{
-		client: client,
-		method: method,
-		path:   path,
-		header: sync.Map{},
+		client:         client.client,
+		method:         method,
+		url:            client.baseURL + path,
+		header:         header,
+		expectedStatus: client.expectedStatus,
+		retryCount:     client.retryCount,
 	}
 }
 
@@ -82,9 +89,14 @@ func (r *Request) WithHeader(key, value string) *Request {
 	return r
 }
 
-// WithRetry sets the desired number of retries on the Request
-func (r *Request) WithRetry(expectedStatusCode, retryCount int) *Request {
+// WithExpectedStatus sets the desired status-code that will be a success
+func (r *Request) WithExpectedStatus(expectedStatusCode int) *Request {
 	r.expectedStatus = expectedStatusCode
+	return r
+}
+
+// WithRetry sets the desired number of retries on the Request
+func (r *Request) WithRetry(retryCount int) *Request {
 	r.retryCount = retryCount
 	return r
 }
@@ -102,7 +114,7 @@ func (r *Request) Do() *Response {
 	}
 
 	// Perform the request and return the wrapped Response
-	res, err := doRetry(r.client.client, req, r.expectedStatus, r.retryCount)
+	res, err := doRetry(r.client, req, r.expectedStatus, r.retryCount)
 	if err != nil {
 		return &Response{err: err}
 	}
@@ -116,7 +128,7 @@ func (r *Request) toHTTPRequest() (*http.Request, error) {
 	}
 
 	// Generate a new http Request using client and passed Request
-	req, err := http.NewRequest(r.method, r.client.baseURL+r.path, r.body)
+	req, err := http.NewRequest(r.method, r.url, r.body)
 	if err != nil {
 		return nil, err
 	}
@@ -127,10 +139,6 @@ func (r *Request) toHTTPRequest() (*http.Request, error) {
 	}
 
 	// Apply all headers from both the client and the Request
-	r.client.header.Range(func(key, value interface{}) bool {
-		req.Header.Set(key.(string), value.(string))
-		return true
-	})
 	r.header.Range(func(key, value interface{}) bool {
 		req.Header.Set(key.(string), value.(string))
 		return true
