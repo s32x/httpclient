@@ -6,7 +6,7 @@
 [![Circle CI](https://circleci.com/gh/s32x/httpclient/tree/master.svg?style=svg)](https://circleci.com/gh/s32x/httpclient/tree/master)
 [![GoDoc](https://godoc.org/s32x.com/httpclient?status.svg)](https://godoc.org/s32x.com/httpclient)
 
-httpclient is a simple convenience package for performing http/api requests in Go. It wraps the standard libraries net/http package to avoid the repetitive request->decode->closebody logic you're likely so familiar with. Using the lib is very simple - just as with the net/http package you can define a client of your own or use the default. Below is a very basic example.
+httpclient is a simple convenience package for performing http/api requests in Go. It wraps the standard libraries net/http package to avoid the repetitive http logic you're likely so familiar with. It helps to remove a good amount of the boilerplate involved with writing an http client library. Using the lib is very simple - Below is a very basic example.
 
 ### Usage
 

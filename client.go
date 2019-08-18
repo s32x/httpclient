@@ -62,10 +62,12 @@ func (c *Client) WithRetry(retryCount int) *Client {
 }
 
 // Request creates a new Request copying configuration from the base Client
-func (c *Client) Request() *Request {
+func (c *Client) Request(method, path string) *Request {
 	r := &Request{
 		client:         c.client,
+		method:         method,
 		baseURL:        c.baseURL,
+		path:           path,
 		header:         sync.Map{},
 		expectedStatus: c.expectedStatus,
 		retryCount:     c.retryCount,

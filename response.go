@@ -15,19 +15,13 @@ type Response struct{ res *http.Response }
 func (r *Response) Close() error { return r.res.Body.Close() }
 
 // Response returns the http Response reference that is on the Response
-func (r *Response) Response() (*http.Response, error) {
-	return r.res, nil
-}
+func (r *Response) Response() (*http.Response, error) { return r.res, nil }
 
 // Status returns the status message on the Response
-func (r *Response) Status() (string, error) {
-	return r.res.Status, nil
-}
+func (r *Response) Status() (string, error) { return r.res.Status, nil }
 
 // StatusCode returns the status code found on the Response
-func (r *Response) StatusCode() (int, error) {
-	return r.res.StatusCode, nil
-}
+func (r *Response) StatusCode() (int, error) { return r.res.StatusCode, nil }
 
 // String attempts to return the decoded response as a string
 func (r *Response) String() (string, error) {
@@ -39,9 +33,7 @@ func (r *Response) String() (string, error) {
 }
 
 // Bytes attempts to return the decoded response as bytes
-func (r *Response) Bytes() ([]byte, error) {
-	return ioutil.ReadAll(r.res.Body)
-}
+func (r *Response) Bytes() ([]byte, error) { return ioutil.ReadAll(r.res.Body) }
 
 // JSON attempts to JSON decode the response body into the passed interface
 func (r *Response) JSON(i interface{}) error {

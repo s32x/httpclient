@@ -28,18 +28,6 @@ type Request struct {
 // Error returns the error stored on the Request
 func (r *Request) Error() error { return r.err }
 
-// WithMethod sets the passed method as the method on the Request
-func (r *Request) WithMethod(method string) *Request {
-	r.method = method
-	return r
-}
-
-// WithPath sets the passed path as the path on the Request
-func (r *Request) WithPath(path string) *Request {
-	r.path = path
-	return r
-}
-
 // WithBytes sets the passed bytes as the body to be used on the Request
 func (r *Request) WithBytes(body []byte) *Request {
 	r.body = bytes.NewBuffer(body)
