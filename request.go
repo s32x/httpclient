@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -116,27 +115,41 @@ func (r *Request) Bytes() ([]byte, error) {
 
 // JSON is a convenience method that handles executing, defer closing, and
 // decoding the JSON body into the passed interface before returning
-func (r *Request) JSON(in interface{}) error {
+// Note: An optional errIn field can be passed (with length of one) to decode
+// a universal API error in the case where the status code isn't expected
+func (r *Request) JSON(out interface{}, errOut ...interface{}) error {
 	res, err := r.Do()
 	if err != nil {
 		return err
 	}
 	defer res.Close()
-	return res.JSON(in)
+	if len(errOut) > 0 &&
+		r.expectedStatus > 0 &&
+		res.StatusCode() != r.expectedStatus {
+		return res.JSON(errOut[0])
+	}
+	return res.JSON(out)
 }
 
 // XML is a convenience method that handles executing, defer closing, and
 // decoding the XML body into the passed interface before returning
-func (r *Request) XML(in interface{}) error {
+// Note: An optional errIn field can be passed (with length of one) to decode
+// a universal API error in the case where the status code isn't expected
+func (r *Request) XML(out interface{}, errOut ...interface{}) error {
 	res, err := r.Do()
 	if err != nil {
 		return err
 	}
 	defer res.Close()
-	return res.XML(in)
+	if len(errOut) > 0 &&
+		r.expectedStatus > 0 &&
+		res.StatusCode() != r.expectedStatus {
+		return res.XML(errOut[0])
+	}
+	return res.XML(out)
 }
 
-// Do performs the passed request and returns a populated Response
+// Do performs the base request and returns a populated Response
 // NOTE: As with the standard library, when calling Do you must remember to
 // close the response body : res.Body.Close()
 func (r *Request) Do() (*Response, error) {
@@ -144,13 +157,18 @@ func (r *Request) Do() (*Response, error) {
 		return nil, r.err
 	}
 
-	// Convert the Request to a standard http Request and perform the request
-	// with retries, returning the wrapped http.Response
+	// Convert the Request to a standard http.Request
 	req, err := r.toHTTPRequest()
 	if err != nil {
 		return nil, err
 	}
-	return doRetry(r.client, req, r.expectedStatus, r.retryCount)
+
+	// Perform the request with retries, returning the wrapped http.Response
+	res, err := doRetry(r.client, req, r.expectedStatus, r.retryCount)
+	if err != nil {
+		return nil, err
+	}
+	return &Response{res: res}, nil
 }
 
 // toHTTPRequest converts a Request to a standard HTTP Request. It assumes
@@ -177,8 +195,7 @@ func (r *Request) toHTTPRequest() (*http.Request, error) {
 
 // doRetry executes the passed http Request using the passed http Client and
 // retries as many times as specified
-func doRetry(c *http.Client, r *http.Request, expectedStatus,
-	retryCount int) (*Response, error) {
+func doRetry(c *http.Client, r *http.Request, expectedStatus, retryCount int) (*http.Response, error) {
 	// Perform the request using the standard library
 	res, err := c.Do(r)
 	if err != nil {
@@ -186,12 +203,10 @@ func doRetry(c *http.Client, r *http.Request, expectedStatus,
 	}
 
 	// Retry for the expected status code or return the response
-	if expectedStatus > 0 && res.StatusCode != expectedStatus {
-		if retryCount > 0 {
-			return doRetry(c, r, expectedStatus, retryCount-1)
-		}
-		return nil, fmt.Errorf("Unexpected status code received : %v",
-			res.StatusCode)
+	if expectedStatus > 0 &&
+		res.StatusCode != expectedStatus &&
+		retryCount > 0 {
+		return doRetry(c, r, expectedStatus, retryCount-1)
 	}
-	return &Response{res: res}, nil
+	return res, nil
 }

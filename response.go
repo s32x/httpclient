@@ -38,11 +38,11 @@ func (r *Response) Bytes() ([]byte, error) {
 }
 
 // JSON attempts to JSON decode the response body into the passed interface
-func (r *Response) JSON(i interface{}) error {
-	return json.NewDecoder(r.res.Body).Decode(i)
+func (r *Response) JSON(out interface{}) error {
+	return json.NewDecoder(r.res.Body).Decode(out)
 }
 
 // XML attempts to XML decode the response body into the passed interface
-func (r *Response) XML(i interface{}) error {
-	return xml.NewDecoder(r.res.Body).Decode(i)
+func (r *Response) XML(out interface{}) error {
+	return xml.NewDecoder(r.res.Body).Decode(out)
 }

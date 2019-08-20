@@ -25,14 +25,20 @@ var user = "s32x"
 func main() {
 	c := httpclient.New().WithBaseURL("https://api.github.com")
 
-	out, err := c.Getf("/users/%s/repos", user).
+	var ghSuccess interface{} // A generic success response
+	var ghError struct {
+		Message       string `json:"message"`
+		Documentation string `json:"documentation"`
+	}
+
+	if err := c.Getf("/users/%s/repos", user).
 		WithExpectedStatus(http.StatusOK).
 		WithRetry(5).
-		String()
-	if err != nil {
+		JSON(&ghSuccess, &ghError); err != nil {
 		log.Fatal(err)
 	}
-	log.Println(out)
+	log.Println("Success :", ghSuccess)
+	log.Println("Error :", ghError)
 }
 ```
 
