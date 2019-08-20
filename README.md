@@ -20,10 +20,12 @@ import (
 	"s32x.com/httpclient"
 )
 
+var user = "s32x"
+
 func main() {
 	c := httpclient.New().WithBaseURL("https://api.github.com")
 
-	out, err := c.Get("/users/s32x/repos").
+	out, err := c.Getf("/users/%s/repos", user).
 		WithExpectedStatus(http.StatusOK).
 		WithRetry(5).
 		String()

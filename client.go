@@ -44,19 +44,3 @@ func (c *Client) WithHeader(key, value string) *Client {
 	c.header.Store(key, value)
 	return c
 }
-
-// Request creates a new Request copying configuration from the base Client
-func (c *Client) Request(method, path string) *Request {
-	r := &Request{
-		client:  c.client,
-		method:  method,
-		baseURL: c.baseURL,
-		path:    path,
-		header:  sync.Map{},
-	}
-	c.header.Range(func(key, val interface{}) bool {
-		r.header.Store(key, val)
-		return true
-	})
-	return r
-}
