@@ -8,19 +8,16 @@ import (
 
 // Client is an http.Client wrapper
 type Client struct {
-	client         *http.Client
-	baseURL        string
-	header         sync.Map
-	expectedStatus int
-	retryCount     int
+	client  *http.Client
+	baseURL string
+	header  sync.Map
 }
 
 // New creates a new Client reference given a client timeout
 func New() *Client {
 	return &Client{
-		client:         &http.Client{},
-		header:         sync.Map{},
-		expectedStatus: http.StatusOK, // Default to expect 200 status codes
+		client: &http.Client{},
+		header: sync.Map{},
 	}
 }
 
@@ -48,29 +45,14 @@ func (c *Client) WithHeader(key, value string) *Client {
 	return c
 }
 
-// WithExpectedStatus sets the desired status-code that will be a success on
-// the Client
-func (c *Client) WithExpectedStatus(expectedStatusCode int) *Client {
-	c.expectedStatus = expectedStatusCode
-	return c
-}
-
-// WithRetry sets the desired number of retries on the Client
-func (c *Client) WithRetry(retryCount int) *Client {
-	c.retryCount = retryCount
-	return c
-}
-
 // Request creates a new Request copying configuration from the base Client
 func (c *Client) Request(method, path string) *Request {
 	r := &Request{
-		client:         c.client,
-		method:         method,
-		baseURL:        c.baseURL,
-		path:           path,
-		header:         sync.Map{},
-		expectedStatus: c.expectedStatus,
-		retryCount:     c.retryCount,
+		client:  c.client,
+		method:  method,
+		baseURL: c.baseURL,
+		path:    path,
+		header:  sync.Map{},
 	}
 	c.header.Range(func(key, val interface{}) bool {
 		r.header.Store(key, val)

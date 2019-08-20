@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -76,13 +77,17 @@ func (r *Request) WithHeader(key, value string) *Request {
 	return r
 }
 
-// WithExpectedStatus sets the desired status-code that will be a success
+// WithExpectedStatus sets the desired status-code that will be a success. If
+// the expected status code isn't received an error will be returned or the
+// request will be retried if a count has been set with WithRetry(...)
 func (r *Request) WithExpectedStatus(expectedStatusCode int) *Request {
 	r.expectedStatus = expectedStatusCode
 	return r
 }
 
 // WithRetry sets the desired number of retries on the Request
+// Note: In order to trigger retries you must set an expected status code with
+// the WithExpectedStatus(...) method
 func (r *Request) WithRetry(retryCount int) *Request {
 	r.retryCount = retryCount
 	return r
@@ -181,8 +186,12 @@ func doRetry(c *http.Client, r *http.Request, expectedStatus,
 	}
 
 	// Retry for the expected status code or return the response
-	if retryCount > 0 && res.StatusCode != expectedStatus {
-		return doRetry(c, r, expectedStatus, retryCount-1)
+	if expectedStatus > 0 && res.StatusCode != expectedStatus {
+		if retryCount > 0 {
+			return doRetry(c, r, expectedStatus, retryCount-1)
+		}
+		return nil, fmt.Errorf("Unexpected status code received : %v",
+			res.StatusCode)
 	}
 	return &Response{res: res}, nil
 }
