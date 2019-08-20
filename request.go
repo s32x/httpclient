@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"sync"
 )
@@ -106,8 +105,8 @@ func (r *Request) Bytes() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
-	return ioutil.ReadAll(res.Body)
+	defer res.Close()
+	return res.Bytes()
 }
 
 // JSON is a convenience method that handles executing, defer closing, and
@@ -117,8 +116,8 @@ func (r *Request) JSON(in interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
-	return json.NewDecoder(res.Body).Decode(in)
+	defer res.Close()
+	return res.JSON(in)
 }
 
 // XML is a convenience method that handles executing, defer closing, and
@@ -128,25 +127,30 @@ func (r *Request) XML(in interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
-	return xml.NewDecoder(res.Body).Decode(in)
+	defer res.Close()
+	return res.XML(in)
 }
 
 // Do performs the passed request and returns a populated Response
 // NOTE: As with the standard library, when calling Do you must remember to
 // close the response body : res.Body.Close()
-func (r *Request) Do() (*http.Response, error) {
+func (r *Request) Do() (*Response, error) {
 	if r.err != nil {
 		return nil, r.err
 	}
 
-	// Convert the Request to a standard http Request and perform the request
-	// with retries
+	// Convert the Request to a standard http Request
 	req, err := r.toHTTPRequest()
 	if err != nil {
 		return nil, err
 	}
-	return doRetry(r.client, req, r.expectedStatus, r.retryCount)
+
+	// Perform the request and return the wrapped Response
+	res, err := doRetry(r.client, req, r.expectedStatus, r.retryCount)
+	if err != nil {
+		return nil, err
+	}
+	return &Response{res: res}, nil
 }
 
 // toHTTPRequest converts a Request to a standard HTTP Request
