@@ -134,8 +134,7 @@ func (r *Request) JSONWithError(out interface{}, errOut interface{}) (bool, erro
 		return false, err
 	}
 	defer res.Close()
-	if r.expectedStatus > 0 &&
-		res.StatusCode() != r.expectedStatus {
+	if r.expectedStatus > 0 && res.StatusCode() != r.expectedStatus {
 		return false, res.JSON(errOut)
 	}
 	return true, res.JSON(out)
@@ -162,8 +161,7 @@ func (r *Request) XMLWithError(out interface{}, errOut interface{}) (bool, error
 		return false, err
 	}
 	defer res.Close()
-	if r.expectedStatus > 0 &&
-		res.StatusCode() != r.expectedStatus {
+	if r.expectedStatus > 0 && res.StatusCode() != r.expectedStatus {
 		return false, res.XML(errOut)
 	}
 	return true, res.XML(out)
