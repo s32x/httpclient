@@ -115,38 +115,58 @@ func (r *Request) Bytes() ([]byte, error) {
 
 // JSON is a convenience method that handles executing, defer closing, and
 // decoding the JSON body into the passed interface before returning
-// Note: An optional errIn field can be passed (with length of one) to decode
-// a universal API error in the case where the status code isn't expected
-func (r *Request) JSON(out interface{}, errOut ...interface{}) error {
+func (r *Request) JSON(out interface{}) error {
 	res, err := r.Do()
 	if err != nil {
 		return err
 	}
 	defer res.Close()
-	if len(errOut) > 0 &&
-		r.expectedStatus > 0 &&
-		res.StatusCode() != r.expectedStatus {
-		return res.JSON(errOut[0])
-	}
 	return res.JSON(out)
+}
+
+// JSONWithError is identical to the JSON(...) method but also takes an errOut
+// interface for when the status code isn't expected. In this case the response
+// body will be decoded into the errOut interface and the boolean (expected)
+// will return false
+func (r *Request) JSONWithError(out interface{}, errOut interface{}) (bool, error) {
+	res, err := r.Do()
+	if err != nil {
+		return false, err
+	}
+	defer res.Close()
+	if r.expectedStatus > 0 &&
+		res.StatusCode() != r.expectedStatus {
+		return false, res.JSON(errOut)
+	}
+	return true, res.JSON(out)
 }
 
 // XML is a convenience method that handles executing, defer closing, and
 // decoding the XML body into the passed interface before returning
-// Note: An optional errIn field can be passed (with length of one) to decode
-// a universal API error in the case where the status code isn't expected
-func (r *Request) XML(out interface{}, errOut ...interface{}) error {
+func (r *Request) XML(out interface{}) error {
 	res, err := r.Do()
 	if err != nil {
 		return err
 	}
 	defer res.Close()
-	if len(errOut) > 0 &&
-		r.expectedStatus > 0 &&
-		res.StatusCode() != r.expectedStatus {
-		return res.XML(errOut[0])
-	}
 	return res.XML(out)
+}
+
+// XMLWithError is identical to the XML(...) method but also takes an errOut
+// interface for when the status code isn't expected. In this case the response
+// body will be decoded into the errOut interface and the boolean (expected)
+// will return false
+func (r *Request) XMLWithError(out interface{}, errOut interface{}) (bool, error) {
+	res, err := r.Do()
+	if err != nil {
+		return false, err
+	}
+	defer res.Close()
+	if r.expectedStatus > 0 &&
+		res.StatusCode() != r.expectedStatus {
+		return false, res.XML(errOut)
+	}
+	return true, res.XML(out)
 }
 
 // Do performs the base request and returns a populated Response
