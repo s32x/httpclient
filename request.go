@@ -139,26 +139,18 @@ func (r *Request) Do() (*Response, error) {
 		return nil, r.err
 	}
 
-	// Convert the Request to a standard http Request
+	// Convert the Request to a standard http Request and perform the request
+	// with retries, returning the wrapped http.Response
 	req, err := r.toHTTPRequest()
 	if err != nil {
 		return nil, err
 	}
-
-	// Perform the request and return the wrapped Response
-	res, err := doRetry(r.client, req, r.expectedStatus, r.retryCount)
-	if err != nil {
-		return nil, err
-	}
-	return &Response{res: res}, nil
+	return doRetry(r.client, req, r.expectedStatus, r.retryCount)
 }
 
-// toHTTPRequest converts a Request to a standard HTTP Request
+// toHTTPRequest converts a Request to a standard HTTP Request. It assumes
+// there is no error on the request.
 func (r *Request) toHTTPRequest() (*http.Request, error) {
-	if r.err != nil {
-		return nil, r.err
-	}
-
 	// Generate a new http Request using client and passed Request
 	req, err := http.NewRequest(r.method, r.baseURL+r.path, r.body)
 	if err != nil {
@@ -180,8 +172,9 @@ func (r *Request) toHTTPRequest() (*http.Request, error) {
 
 // doRetry executes the passed http Request using the passed http Client and
 // retries as many times as specified
-func doRetry(c *http.Client, r *http.Request, expectedStatus, retryCount int) (*http.Response, error) {
-	// Perform the request
+func doRetry(c *http.Client, r *http.Request, expectedStatus,
+	retryCount int) (*Response, error) {
+	// Perform the request using the standard library
 	res, err := c.Do(r)
 	if err != nil {
 		return nil, err
@@ -191,5 +184,5 @@ func doRetry(c *http.Client, r *http.Request, expectedStatus, retryCount int) (*
 	if retryCount > 0 && res.StatusCode != expectedStatus {
 		return doRetry(c, r, expectedStatus, retryCount-1)
 	}
-	return res, nil
+	return &Response{res: res}, nil
 }
