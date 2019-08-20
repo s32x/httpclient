@@ -21,12 +21,12 @@ import (
 )
 
 func main() {
-	c := httpclient.New().
-		WithBaseURL("https://api.github.com").
-		WithExpectedStatus(http.StatusOK).
-		WithRetry(5)
+	c := httpclient.New().WithBaseURL("https://api.github.com")
 
-	out, err := c.Get("/users/s32x/repos").String()
+	out, err := c.Get("/users/s32x/repos").
+		WithExpectedStatus(http.StatusOK).
+		WithRetry(5).
+		String()
 	if err != nil {
 		log.Fatal(err)
 	}
