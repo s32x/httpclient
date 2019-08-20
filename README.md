@@ -31,14 +31,19 @@ func main() {
 		Documentation string `json:"documentation"`
 	}
 
-	if err := c.Getf("/users/%s/repos", user).
+	expected, err := c.
+		Getf("/users/%s/repos", user).
 		WithExpectedStatus(http.StatusOK).
 		WithRetry(5).
-		JSON(&ghSuccess, &ghError); err != nil {
+		JSONWithError(&ghSuccess, &ghError)
+	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Success :", ghSuccess)
-	log.Println("Error :", ghError)
+	if !expected {
+		log.Println("Error :", ghError)
+	} else {
+		log.Println("Success :", ghSuccess)
+	}
 }
 ```
 
