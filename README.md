@@ -26,13 +26,7 @@ func main() {
 		WithExpectedStatus(http.StatusOK).
 		WithRetry(5)
 
-	res, err := c.Get("/users/s32x/repos").Do()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer res.Close()
-
-	out, err := res.String()
+	out, err := c.Get("/users/s32x/repos").String()
 	if err != nil {
 		log.Fatal(err)
 	}

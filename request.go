@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"sync"
 )
@@ -88,24 +89,64 @@ func (r *Request) WithRetry(retryCount int) *Request {
 	return r
 }
 
+// String is a convenience method that handles executing, defer closing, and
+// decoding the body into a string before returning
+func (r *Request) String() (string, error) {
+	bytes, err := r.Bytes()
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
+}
+
+// Bytes is a convenience method that handles executing, defer closing, and
+// decoding the body into a slice of bytes before returning
+func (r *Request) Bytes() ([]byte, error) {
+	res, err := r.Do()
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	return ioutil.ReadAll(res.Body)
+}
+
+// JSON is a convenience method that handles executing, defer closing, and
+// decoding the JSON body into the passed interface before returning
+func (r *Request) JSON(in interface{}) error {
+	res, err := r.Do()
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	return json.NewDecoder(res.Body).Decode(in)
+}
+
+// XML is a convenience method that handles executing, defer closing, and
+// decoding the XML body into the passed interface before returning
+func (r *Request) XML(in interface{}) error {
+	res, err := r.Do()
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	return xml.NewDecoder(res.Body).Decode(in)
+}
+
 // Do performs the passed request and returns a populated Response
-func (r *Request) Do() (*Response, error) {
+// NOTE: As with the standard library, when calling Do you must remember to
+// close the response body : res.Body.Close()
+func (r *Request) Do() (*http.Response, error) {
 	if r.err != nil {
 		return nil, r.err
 	}
 
-	// Convert the Request to a standard http Request
+	// Convert the Request to a standard http Request and perform the request
+	// with retries
 	req, err := r.toHTTPRequest()
 	if err != nil {
 		return nil, err
 	}
-
-	// Perform the request and return the wrapped Response
-	res, err := doRetry(r.client, req, r.expectedStatus, r.retryCount)
-	if err != nil {
-		return nil, err
-	}
-	return &Response{res: res}, nil
+	return doRetry(r.client, req, r.expectedStatus, r.retryCount)
 }
 
 // toHTTPRequest converts a Request to a standard HTTP Request
