@@ -7,6 +7,7 @@ import (
 	"encoding/xml"
 	"io"
 	"net/http"
+	"net/url"
 	"sync"
 )
 
@@ -37,6 +38,14 @@ func (r *Request) WithBytes(body []byte) *Request {
 // WithString sets the passed string as the body to be used on the Request
 func (r *Request) WithString(body string) *Request {
 	r.body = bytes.NewBufferString(body)
+	return r
+}
+
+// WithForm encodes and sets the passed url.Values as the body to be used on
+// the Request
+func (r *Request) WithForm(data url.Values) *Request {
+	r = r.WithContentType("application/x-www-form-urlencoded")
+	r.body = bytes.NewBufferString(data.Encode())
 	return r
 }
 
