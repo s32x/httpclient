@@ -30,42 +30,43 @@ type Request struct {
 // Error returns the error stored on the Request
 func (r *Request) Error() error { return r.err }
 
+// WithBody sets the body on the request with the passed io.ReadWriter
+func (r *Request) WithBody(body io.ReadWriter) *Request {
+	r.body = body
+	return r
+}
+
 // WithBytes sets the passed bytes as the body to be used on the Request
 func (r *Request) WithBytes(body []byte) *Request {
-	r.body = bytes.NewBuffer(body)
-	return r
+	return r.WithBody(bytes.NewBuffer(body))
 }
 
 // WithString sets the passed string as the body to be used on the Request
 func (r *Request) WithString(body string) *Request {
-	r.body = bytes.NewBufferString(body)
-	return r
+	return r.WithBody(bytes.NewBufferString(body))
 }
 
 // WithForm encodes and sets the passed url.Values as the body to be used on
 // the Request
 func (r *Request) WithForm(data url.Values) *Request {
-	r = r.WithContentType("application/x-www-form-urlencoded")
-	r.body = bytes.NewBufferString(data.Encode())
-	return r
+	return r.WithBody(bytes.NewBufferString(data.Encode())).
+		WithContentType("application/x-www-form-urlencoded")
 }
 
 // WithJSON sets the JSON encoded passed interface as the body to be used on
 // the Request
 func (r *Request) WithJSON(body interface{}) *Request {
-	r = r.WithContentType("application/json")
 	r.body = bytes.NewBuffer(nil)
 	r.err = json.NewEncoder(r.body).Encode(body)
-	return r
+	return r.WithContentType("application/json")
 }
 
 // WithXML sets the XML encoded passed interface as the body to be used on the
 // Request
 func (r *Request) WithXML(body interface{}) *Request {
-	r = r.WithContentType("application/xml")
 	r.body = bytes.NewBuffer(nil)
 	r.err = xml.NewEncoder(r.body).Encode(body)
-	return r
+	return r.WithContentType("application/xml")
 }
 
 // WithContext sets the context on the Request
