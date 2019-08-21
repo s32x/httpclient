@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -119,6 +120,9 @@ func (r *Request) Bytes() ([]byte, error) {
 		return nil, err
 	}
 	defer res.Close()
+	if r.expectedStatus > 0 && res.StatusCode() != r.expectedStatus {
+		return nil, fmt.Errorf("Unexpected status received : %s", res.Status())
+	}
 	return res.Bytes()
 }
 
@@ -130,6 +134,9 @@ func (r *Request) JSON(out interface{}) error {
 		return err
 	}
 	defer res.Close()
+	if r.expectedStatus > 0 && res.StatusCode() != r.expectedStatus {
+		return fmt.Errorf("Unexpected status received : %s", res.Status())
+	}
 	return res.JSON(out)
 }
 
@@ -157,6 +164,9 @@ func (r *Request) XML(out interface{}) error {
 		return err
 	}
 	defer res.Close()
+	if r.expectedStatus > 0 && res.StatusCode() != r.expectedStatus {
+		return fmt.Errorf("Unexpected status received : %s", res.Status())
+	}
 	return res.XML(out)
 }
 
