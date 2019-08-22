@@ -3,6 +3,7 @@ package httpclient
 import (
 	"encoding/json"
 	"encoding/xml"
+	"io"
 	"io/ioutil"
 	"net/http"
 )
@@ -10,6 +11,17 @@ import (
 // Response contains the raw http.Response reference OR any error that took
 // place while performing the request
 type Response struct{ res *http.Response }
+
+// Body returns the io Readcloser body on the Responses http Response
+func (r *Response) Body() io.ReadCloser { return r.res.Body }
+
+// ContentType returns the content-type header found on the response
+func (r *Response) ContentType() string {
+	return r.Header().Get("Content-Type")
+}
+
+// Header returns the Header on the Responses http Response
+func (r *Response) Header() http.Header { return r.res.Header }
 
 // Close closes the response body on the Responses http Response
 func (r *Response) Close() error { return r.res.Body.Close() }
