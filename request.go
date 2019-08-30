@@ -27,9 +27,6 @@ type Request struct {
 	ctx            context.Context
 }
 
-// Error returns the error stored on the Request
-func (r *Request) Error() error { return r.err }
-
 // WithBody sets the body on the request with the passed io.ReadWriter
 func (r *Request) WithBody(body io.ReadWriter) *Request {
 	r.body = body
@@ -185,6 +182,19 @@ func (r *Request) XMLWithError(out interface{}, errOut interface{}) (bool, error
 		return false, res.XML(errOut)
 	}
 	return true, res.XML(out)
+}
+
+// Error performs the request and returns any errors that result from the Do
+func (r *Request) Error() error {
+	res, err := r.Do()
+	if err != nil {
+		return err
+	}
+	defer res.Close()
+	if r.expectedStatus > 0 && res.StatusCode() != r.expectedStatus {
+		return fmt.Errorf("Unexpected status received : %s", res.Status())
+	}
+	return nil
 }
 
 // Do performs the base request and returns a populated Response
