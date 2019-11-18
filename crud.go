@@ -3,7 +3,6 @@ package httpclient
 import (
 	"fmt"
 	"net/http"
-	"sync"
 )
 
 // Postf takes a format and a variadic of arguments and returns a prepopulated
@@ -79,11 +78,10 @@ func (c *Client) Request(method, path string) *Request {
 		method:  method,
 		baseURL: c.baseURL,
 		path:    path,
-		header:  sync.Map{},
+		headers: []header{},
 	}
-	c.header.Range(func(key, val interface{}) bool {
-		r.header.Store(key, val)
-		return true
-	})
+	for _, h := range c.headers {
+		r.headers = append(r.headers, header{key: h.key, value: h.value})
+	}
 	return r
 }

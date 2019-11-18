@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"sync"
 )
 
 // Request is a type used for configuring, performing and decoding HTTP
@@ -20,7 +19,7 @@ type Request struct {
 	method         string
 	baseURL        string
 	path           string
-	header         sync.Map
+	headers        []header
 	expectedStatus int // The statusCode that is expected for a success
 	retryCount     int // Number of times to retry
 	body           io.ReadWriter
@@ -80,7 +79,7 @@ func (r *Request) WithContentType(typ string) *Request {
 
 // WithHeader sets a header that will be used on the Request
 func (r *Request) WithHeader(key, value string) *Request {
-	r.header.Store(key, value)
+	r.headers = append(r.headers, header{key: key, value: value})
 	return r
 }
 
@@ -234,10 +233,9 @@ func (r *Request) toHTTPRequest() (*http.Request, error) {
 	}
 
 	// Apply all headers from both the client and the Request
-	r.header.Range(func(key, value interface{}) bool {
-		req.Header.Set(key.(string), value.(string))
-		return true
-	})
+	for _, h := range r.headers {
+		req.Header.Set(h.key, h.value)
+	}
 	return req, nil
 }
 

@@ -2,7 +2,6 @@ package httpclient
 
 import (
 	"net/http"
-	"sync"
 	"time"
 )
 
@@ -10,14 +9,17 @@ import (
 type Client struct {
 	client  *http.Client
 	baseURL string
-	header  sync.Map
+	headers []header
 }
+
+// header is a struct that contains a key and a value
+type header struct{ key, value string }
 
 // New creates a new Client reference given a client timeout
 func New() *Client {
 	return &Client{
-		client: &http.Client{},
-		header: sync.Map{},
+		client:  &http.Client{},
+		headers: []header{},
 	}
 }
 
@@ -41,6 +43,6 @@ func (c *Client) WithBaseURL(url string) *Client {
 
 // WithHeader sets the headers on the Client
 func (c *Client) WithHeader(key, value string) *Client {
-	c.header.Store(key, value)
+	c.headers = append(c.headers, header{key: key, value: value})
 	return c
 }
