@@ -29,9 +29,15 @@ func (c *Client) WithClient(client *http.Client) *Client {
 	return c
 }
 
-// WithTimeout sets the timeout on the http client
+// WithTimeout sets the timeout on the http Client
 func (c *Client) WithTimeout(timeout time.Duration) *Client {
 	c.client.Timeout = timeout
+	return c
+}
+
+// WithTransport sets teh transport on the http Client
+func (c *Client) WithTransport(transport http.RoundTripper) *Client {
+	c.client.Transport = transport
 	return c
 }
 
