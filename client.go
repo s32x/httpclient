@@ -52,3 +52,6 @@ func (c *Client) WithHeader(key, value string) *Client {
 	c.headers = append(c.headers, header{key: key, value: value})
 	return c
 }
+
+// Client is a getter that returns a reference to the underlying http Client
+func (c *Client) Client() *http.Client { return c.client }
