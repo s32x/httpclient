@@ -9,6 +9,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/cenkalti/backoff/v4"
 )
 
 // Request is a type used for configuring, performing and decoding HTTP
@@ -242,17 +244,38 @@ func (r *Request) toHTTPRequest() (*http.Request, error) {
 // doRetry executes the passed http Request using the passed http Client and
 // retries as many times as specified
 func doRetry(c *http.Client, r *http.Request, expectedStatus, retryCount int) (*http.Response, error) {
-	// Perform the request using the standard library
-	res, err := c.Do(r)
+	// Create a ticker that will execute the exponential backoff algorithm
+	ticker := backoff.NewTicker(backoff.NewExponentialBackOff())
+
+	// Define the return variables
+	var res *http.Response
+	var err error
+
+	// Continuously retry HTTP requests
+	tries := 0
+	for range ticker.C {
+		tries++ // Increment the tries value to indicate which try num we're on
+
+		// Perform the request using the standard library
+		res, err = c.Do(r)
+		if err != nil {
+			continue // Retry on failed standard lib request execution
+		}
+
+		// If the status code isn't what we expect
+		if expectedStatus > 0 && expectedStatus != res.StatusCode {
+			if retryCount > tries {
+				continue // Retry if we should
+			}
+			err = fmt.Errorf("request failed to get expected status after %v retries", retryCount)
+		}
+
+		// Stop the ticker and break out of the tick loop
+		ticker.Stop()
+		break
+	}
 	if err != nil {
 		return nil, err
-	}
-
-	// Retry for the expected status code or return the response
-	if expectedStatus > 0 &&
-		res.StatusCode != expectedStatus &&
-		retryCount > 0 {
-		return doRetry(c, r, expectedStatus, retryCount-1)
 	}
 	return res, nil
 }
