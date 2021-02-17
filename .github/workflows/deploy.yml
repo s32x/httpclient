@@ -1,0 +1,22 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: ^1 # Also see: https://github.com/actions/go-versions/blob/main/versions-manifest.json
+        id: go
+
+      - name: Check out the repository
+        uses: actions/checkout@v2.3.4
+
+      - name: Test all packages
+        run: go test -v ./...
