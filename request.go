@@ -259,7 +259,7 @@ func doRetry(c *http.Client, r *http.Request, expectedStatus, retryCount int) (*
 		// Perform the request using the standard library
 		res, err = c.Do(r)
 		if err != nil {
-			continue // Retry on failed standard lib request execution
+			return nil, err
 		}
 
 		// If the status code isn't what we expect
