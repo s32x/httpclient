@@ -3,11 +3,15 @@ package httpclient /* import "s32x.com/httpclient" */
 import (
 	"net/http"
 	"time"
+
+	"s32x.com/httpclient/cache"
+	"s32x.com/httpclient/cache/cachers"
 )
 
 // Client is an http.Client wrapper
 type Client struct {
 	client  *http.Client
+	cache   cache.Cacher
 	baseURL string
 	headers []header
 }
@@ -51,6 +55,16 @@ func (c *Client) WithBaseURL(url string) *Client {
 func (c *Client) WithHeader(key, value string) *Client {
 	c.headers = append(c.headers, header{key: key, value: value})
 	return c
+}
+
+// WithCache sets a new cacher on the Client
+func (c *Client) WithCache(name string, defaultExpiration time.Duration) (*Client, error) {
+	var err error
+	c.cache, err = cachers.NewBadger(name, defaultExpiration)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 // Client is a getter that returns a reference to the underlying http Client

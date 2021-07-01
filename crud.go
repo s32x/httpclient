@@ -75,6 +75,7 @@ func (c *Client) Delete(path string) *Request {
 func (c *Client) Request(method, path string) *Request {
 	r := &Request{
 		client:  c.client,
+		cache:   c.cache,
 		method:  method,
 		baseURL: c.baseURL,
 		path:    path,

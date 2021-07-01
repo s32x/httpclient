@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/cenkalti/backoff/v4"
+	"s32x.com/httpclient/cache"
 )
 
 // Request is a type used for configuring, performing and decoding HTTP
@@ -18,6 +20,7 @@ import (
 type Request struct {
 	err            error
 	client         *http.Client // DO NOT MODIFY THIS CLIENT
+	cache          cache.Cacher
 	method         string
 	baseURL        string
 	path           string
@@ -118,11 +121,10 @@ func (r *Request) Bytes() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer res.Close()
-	if r.expectedStatus > 0 && res.StatusCode() != r.expectedStatus {
-		return nil, fmt.Errorf("Unexpected status received : %s", res.Status())
+	if r.expectedStatus > 0 && res.Status != r.expectedStatus {
+		return nil, fmt.Errorf("unexpected status code: %v", res.Status)
 	}
-	return res.Bytes()
+	return res.Bytes(), nil
 }
 
 // JSON is a convenience method that handles executing, defer closing, and
@@ -132,9 +134,8 @@ func (r *Request) JSON(out interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer res.Close()
-	if r.expectedStatus > 0 && res.StatusCode() != r.expectedStatus {
-		return fmt.Errorf("Unexpected status received : %s", res.Status())
+	if r.expectedStatus > 0 && res.Status != r.expectedStatus {
+		return fmt.Errorf("unexpected status code: %v", res.Status)
 	}
 	return res.JSON(out)
 }
@@ -148,8 +149,7 @@ func (r *Request) JSONWithError(out interface{}, errOut interface{}) (bool, erro
 	if err != nil {
 		return false, err
 	}
-	defer res.Close()
-	if r.expectedStatus > 0 && res.StatusCode() != r.expectedStatus {
+	if r.expectedStatus > 0 && res.Status != r.expectedStatus {
 		return false, res.JSON(errOut)
 	}
 	return true, res.JSON(out)
@@ -162,9 +162,8 @@ func (r *Request) XML(out interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer res.Close()
-	if r.expectedStatus > 0 && res.StatusCode() != r.expectedStatus {
-		return fmt.Errorf("Unexpected status received : %s", res.Status())
+	if r.expectedStatus > 0 && res.Status != r.expectedStatus {
+		return fmt.Errorf("unexpected status code: %v", res.Status)
 	}
 	return res.XML(out)
 }
@@ -178,8 +177,7 @@ func (r *Request) XMLWithError(out interface{}, errOut interface{}) (bool, error
 	if err != nil {
 		return false, err
 	}
-	defer res.Close()
-	if r.expectedStatus > 0 && res.StatusCode() != r.expectedStatus {
+	if r.expectedStatus > 0 && res.Status != r.expectedStatus {
 		return false, res.XML(errOut)
 	}
 	return true, res.XML(out)
@@ -191,9 +189,8 @@ func (r *Request) Error() error {
 	if err != nil {
 		return err
 	}
-	defer res.Close()
-	if r.expectedStatus > 0 && res.StatusCode() != r.expectedStatus {
-		return fmt.Errorf("Unexpected status received : %s", res.Status())
+	if r.expectedStatus > 0 && res.Status != r.expectedStatus {
+		return fmt.Errorf("unexpected status code: %v", res.Status)
 	}
 	return nil
 }
@@ -206,18 +203,46 @@ func (r *Request) Do() (*Response, error) {
 		return nil, r.err
 	}
 
+	// Check any existing cache for a cached response
+	cacheKey := fmt.Sprintf("%s:%s%s", r.method, r.baseURL, r.path)
+	if r.cache != nil && r.method == http.MethodGet {
+		b, err := r.cache.Get(cacheKey)
+		if err == nil && b != nil {
+			var res Response
+			if err := json.Unmarshal(b, &res); err != nil {
+				return nil, fmt.Errorf("cache json unmarshal: %w", err)
+			}
+			return &res, nil
+		}
+		if !errors.Is(err, cache.ErrKeyNotFound) {
+			return nil, fmt.Errorf("cache get (%s): %w", cacheKey, err)
+		}
+	}
+
 	// Convert the Request to a standard http.Request
 	req, err := r.toHTTPRequest()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("to http request: %w", err)
 	}
 
 	// Perform the request with retries, returning the wrapped http.Response
 	res, err := doRetry(r.client, req, r.expectedStatus, r.retryCount)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("do retry: %w", err)
 	}
-	return &Response{res: res}, nil
+
+	// Store the res in the cache if a cache is configured and it's a
+	// successful response
+	if r.cache != nil && r.method == http.MethodGet && res.Status < 300 {
+		resBytes, err := json.Marshal(res)
+		if err != nil {
+			return nil, fmt.Errorf("json encode for cache: %w", err)
+		}
+		if err := r.cache.Set(cacheKey, resBytes); err != nil {
+			return nil, fmt.Errorf("cache set: %w", err)
+		}
+	}
+	return res, nil
 }
 
 // toHTTPRequest converts a Request to a standard HTTP Request. It assumes
@@ -243,39 +268,44 @@ func (r *Request) toHTTPRequest() (*http.Request, error) {
 
 // doRetry executes the passed http Request using the passed http Client and
 // retries as many times as specified
-func doRetry(c *http.Client, r *http.Request, expectedStatus, retryCount int) (*http.Response, error) {
+func doRetry(c *http.Client, r *http.Request, expectedStatus, retryCount int) (*Response, error) {
 	// Create a ticker that will execute the exponential backoff algorithm
 	ticker := backoff.NewTicker(backoff.NewExponentialBackOff())
-
-	// Define the return variables
-	var res *http.Response
-	var err error
 
 	// Continuously retry HTTP requests
 	tries := 0
 	for range ticker.C {
-		tries++ // Increment the tries value to indicate which try num we're on
+		// Increment the tries value to indicate which try num we're on
+		tries++
 
-		// Perform the request using the standard library
-		res, err = c.Do(r)
-		if err != nil {
-			return nil, err
-		}
-
-		// If the status code isn't what we expect
-		if expectedStatus > 0 && expectedStatus != res.StatusCode {
-			if retryCount > tries {
-				continue // Retry if we should
-			}
-			err = fmt.Errorf("request failed to get expected status after %v retries", retryCount)
+		// Execute the request
+		r, err := do(c, r, expectedStatus)
+		if err == nil {
+			return r, nil
 		}
 
 		// Stop the ticker and break out of the tick loop
-		ticker.Stop()
-		break
+		if retryCount <= tries {
+			ticker.Stop()
+			break
+		}
 	}
+	return nil, fmt.Errorf("request failed after %v retries", retryCount)
+}
+
+// do attempts to execute the passed request on the passed client and returns
+// the resulting bytes and a status code
+func do(c *http.Client, r *http.Request, expectedStatus int) (*Response, error) {
+	// Perform the request using the standard library
+	res, err := c.Do(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("do request: %w", err)
 	}
-	return res, nil
+	defer res.Body.Close()
+
+	// If the status code isn't what we expect, return an error
+	if expectedStatus > 0 && expectedStatus != res.StatusCode {
+		return nil, fmt.Errorf("unexpected status code: %s", res.Status)
+	}
+	return newResponse(res)
 }
