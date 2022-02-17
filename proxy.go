@@ -1,4 +1,4 @@
-package httpclient /* import "s32x.com/httpclient" */
+package httpclient
 
 import (
 	"net/http"
